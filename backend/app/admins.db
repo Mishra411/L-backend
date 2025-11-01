@@ -1,0 +1,19 @@
+
+
+CREATE TABLE admins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL
+);
+
+-- Example inserts with SHA-256 hashed passwords:
+-- Use Python to generate hashed passwords
+-- import hashlib
+-- hashlib.sha256("password123".encode()).hexdigest()
+
+INSERT INTO admins (username, password) VALUES
+('admin1', 'hash_here'),
+('admin2', 'hash_here'),
+('admin3', 'hash_here'),
+('admin4', 'hash_here');
+

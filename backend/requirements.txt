@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+SQLAlchemy
+pydantic
+python-multipart
+python-dotenv
+alembic
+httpx
+psycopg2-binary    # if using Postgres
+python-jose[bcrypt]  # if auth later
+passlib[bcrypt]
