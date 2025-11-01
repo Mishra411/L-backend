@@ -1,6 +1,8 @@
+# app/main.py
+
 from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Form
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import Optional
 from . import models, schemas, crud
@@ -9,26 +11,23 @@ from .deps import get_db
 from .utils import save_upload_file_local
 import os
 import openai
-from fastapi import Body
-from fastapi.middleware.cors import CORSMiddleware
 
+# ----------------------------
 # Initialize DB
+# ----------------------------
 models.Base.metadata.create_all(bind=engine)
 
+# ----------------------------
 # FastAPI app
+# ----------------------------
 app = FastAPI(title="LRT Accessibility Reporter API")
 
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# ----------------------------
+# CORS Middleware
+# ----------------------------
 origins = [
-    "https://L-frontend.up.railway.app",  # your frontend on Railway
-    "http://localhost:5173",              # for local dev
+    "https://L-frontend.up.railway.app",
+    "http://localhost:5173",
 ]
 
 app.add_middleware(
@@ -38,11 +37,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ----------------------------
 # Uploads
+# ----------------------------
 uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
-# OpenAI API key
+# ----------------------------
+# OpenAI API
+# ----------------------------
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
@@ -55,7 +60,11 @@ async def analyze_ai(text: str) -> str:
     )
     return resp.choices[0].message.content
 
-# Endpoints
+# ----------------------------
+# Routes
+# ----------------------------
+
+# Create report
 @app.post("/reports", response_model=schemas.ReportOut)
 async def create_report(
     station_name: str = Form(...),
@@ -94,9 +103,9 @@ async def create_report(
     r.ai_analysis = await analyze_ai(report_in.description)
     db.commit()
     db.refresh(r)
-
     return r
 
+# List reports
 @app.get("/reports", response_model=list[schemas.ReportOut])
 def list_reports(
     skip: int = 0,
@@ -120,6 +129,7 @@ def list_reports(
     results = crud.list_reports(db, skip=skip, limit=limit, filters=filters, sort=sort)
     return results
 
+# Get single report
 @app.get("/reports/{report_id}", response_model=schemas.ReportOut)
 def get_report(report_id: str, db: Session = Depends(get_db)):
     r = crud.get_report(db, report_id)
@@ -127,6 +137,7 @@ def get_report(report_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Report not found")
     return r
 
+# Update report
 @app.patch("/reports/{report_id}", response_model=schemas.ReportOut)
 def patch_report(report_id: str, payload: schemas.ReportUpdate, db: Session = Depends(get_db)):
     data = payload.dict(exclude_unset=True)
@@ -135,6 +146,7 @@ def patch_report(report_id: str, payload: schemas.ReportUpdate, db: Session = De
         raise HTTPException(status_code=404, detail="Report not found")
     return r
 
+# Reports stats
 @app.get("/reports/stats", response_model=schemas.StatsOut)
 def get_stats(db: Session = Depends(get_db)):
     return crud.stats(db)
@@ -145,10 +157,12 @@ async def ai_analyze(description: str = Form(...)):
     result = await analyze_ai(description)
     return {"ai_analysis": result}
 
+# User registration
 @app.post("/auth/register", response_model=schemas.UserOut)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return crud.create_user(db, user.username, user.password, user.role)
 
+# User login
 @app.post("/auth/login", response_model=schemas.UserOut)
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     db_user = crud.authenticate_user(db, user.username, user.password)
@@ -156,14 +170,13 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     return db_user
 
+# Admin login
 @app.post("/auth/admin/login")
 def login_admin_endpoint(
     username: str = Form(...),
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # REMOVED: from .models import Admin (using models.Admin instead)
-    # The Admin model is now correctly accessed via the top-level 'models' import
     admin = db.query(models.Admin).filter(models.Admin.username == username).first()
     if not admin or not admin.verify_password(password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
