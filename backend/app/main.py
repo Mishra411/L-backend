@@ -10,8 +10,20 @@ from .utils import save_upload_file_local
 import os
 import openai
 from fastapi import Body
+from fastapi.middleware.cors import CORSMiddleware
 
+origins = [
+    "https://L-frontend.up.railway.app",  # your frontend on Railway
+    "http://localhost:5173",              # for local dev
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Initialize DB
 models.Base.metadata.create_all(bind=engine)
