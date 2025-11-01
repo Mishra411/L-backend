@@ -12,19 +12,6 @@ import openai
 from fastapi import Body
 from fastapi.middleware.cors import CORSMiddleware
 
-origins = [
-    "https://L-frontend.up.railway.app",  # your frontend on Railway
-    "http://localhost:5173",              # for local dev
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Initialize DB
 models.Base.metadata.create_all(bind=engine)
 
@@ -39,7 +26,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+origins = [
+    "https://L-frontend.up.railway.app",  # your frontend on Railway
+    "http://localhost:5173",              # for local dev
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Uploads
 uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
